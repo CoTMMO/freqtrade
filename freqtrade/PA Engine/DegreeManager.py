@@ -270,3 +270,20 @@ class DegreeManager:
             count += 1
         
         return count
+    
+    def get_trade_plans(self,
+                        current_price: float,
+                        indicators: Dict[str, Any],
+                        intermarket_signals: Dict[str, Any],
+                        key_levels: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Generate trade plans from current degrees using Bryce Gilmore methodology.
+        """
+        from .gilmore_trade_plan import generate_gilmore_trade_plan
+        return generate_gilmore_trade_plan(
+            self.degrees,
+            current_price,
+            indicators,
+            intermarket_signals,
+            key_levels
+        )
