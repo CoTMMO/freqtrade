@@ -229,45 +229,44 @@ class DegreeManager:
         
         tick_size = SwingFactory.get_current_tick_size()
         count = 0
-        min_size = minimum_swing_size
-        max_size = 50.0
-        
-        # Get the size of the first bar (simple approximation for Python version)
-        first_bar_size = abs(high_prices[1] - low_prices[1]) if len(high_prices) > 1 and len(low_prices) > 1 else 2.0
-        
-        for start in [x * tick_size + max(2.0, first_bar_size) for x in range(int((max_size - max(2.0, first_bar_size)) / tick_size) + 1)]:
-            # Break if we're above the maximum or above the current degree swing size when updating
-            if start > max_size or (is_update_degree and start > degree.swing_size):
-                break
-            
+        start = abs(high_prices[0] - high_prices[rates_total - 1]) if rates_total > 0 else 0.0
+        rt = rates_total
+        t_arr = time
+        o_arr = open_prices
+        h_arr = high_prices
+        l_arr = low_prices
+        c_arr = close_prices
+
+        while start >= 4 * tick_size:
             current_degree = Degree()
-            SwingFactory.get_all_swing_from(current_degree, rates_total, time, open_prices, high_prices, low_prices, close_prices, start)
-            
-            # If swing count < 5, break loop
-            if current_degree.swing_count < 5:
+            SwingFactory.get_all_swing_from(current_degree, rt, t_arr,
+                                           o_arr, h_arr, l_arr,
+                                           c_arr, start)
+            if current_degree.swing_count < 3:
                 break
-            
+            last_swing = current_degree.swings[current_degree.swing_count - 1]
+            start = last_swing.size
+            index = last_swing.highIndex if last_swing.direction == SwingDirection.UP else last_swing.lowIndex
+            t_arr = t_arr[index:]
+            o_arr = o_arr[index:]
+            h_arr = h_arr[index:]
+            l_arr = l_arr[index:]
+            c_arr = c_arr[index:]
+            rt = len(t_arr)
             current_degree.direction = self.direction(current_degree)
-            
             if self.is_duplicated(current_degree, self.degrees):
                 continue
-            
-            # Capture current context
             current_degree.rates_total = rates_total
             current_degree.tradeState = TradeState.NATURAL
             current_degree.sumDeals = 0
-            
-            # Call GeometryManager methods
             GeometryManager.detect_support_and_resistance_for(current_degree)
             GeometryManager.detect_brycle_xabcd(current_degree)
-            
             if is_update_degree:
                 self.degrees.insert(0, current_degree)
                 self.degree_count += 1
             else:
                 self.degrees.append(current_degree)
                 self.degree_count += 1
-            
             count += 1
         
         return count
